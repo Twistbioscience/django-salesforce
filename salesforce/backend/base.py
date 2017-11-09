@@ -129,6 +129,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         with connect_lock:
             if self._sf_session is None:
                 sf_session = requests.Session()
+                sf_session.keep_alive = False
                 # TODO configurable class Salesforce***Auth
                 sf_session.auth = SalesforcePasswordAuth(db_alias=self.alias,
                                                          settings_dict=self.settings_dict)
