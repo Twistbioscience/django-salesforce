@@ -19,6 +19,7 @@ import decimal
 import json
 import logging
 import pytz
+import errno
 from itertools import islice
 
 from django.conf import settings
@@ -559,7 +560,14 @@ class CursorWrapper(object):
             return ret
 
         log.debug('INSERT %s%s' % (table, post_data))
-        return handle_api_exceptions(url, self.session.post, headers=headers, data=json.dumps(post_data), _cursor=self)
+
+        try:
+            return handle_api_exceptions(url, self.session.post, headers=headers, data=json.dumps(post_data), _cursor=self)
+        except OSError as e:
+            if e.errno == errno.ECONNRESET:
+                log.error('Killing salesforce session because of connection reset by peer error')
+                self.db.kill_session()
+            raise
 
     def execute_update(self, query):
         table = query.model._meta.db_table

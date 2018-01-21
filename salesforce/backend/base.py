@@ -129,7 +129,6 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         with connect_lock:
             if self._sf_session is None:
                 sf_session = requests.Session()
-                sf_session.keep_alive = False
                 # TODO configurable class Salesforce***Auth
                 sf_session.auth = SalesforcePasswordAuth(db_alias=self.alias,
                                                          settings_dict=self.settings_dict)
@@ -140,6 +139,9 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 # me. (less than SF speed fluctuation)
                 # sf_session.header = {'accept-encoding': 'gzip, deflate', 'connection': 'keep-alive'}
                 self._sf_session = sf_session
+
+    def kill_session(self):
+        self._sf_session = None
 
     @property
     def sf_session(self):
