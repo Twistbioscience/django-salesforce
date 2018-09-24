@@ -242,8 +242,14 @@ class SalesforceModelIterable(BaseIterable):
             sql, params = SQLCompiler(queryset.query, connections[queryset.db], None).as_sql()
         except EmptyResultSet:
             raise StopIteration
-        cursor = CursorWrapper(connections[queryset.db], queryset.query)
-        cursor.execute(sql, params)
+        try:
+            cursor = CursorWrapper(connections[queryset.db], queryset.query)
+            cursor.execute(sql, params)
+        except OSError as e:
+            if e.errno == errno.ECONNRESET:
+                log.error('Killing salesforce session because of connection reset by peer error')
+                self.db.kill_session()
+            raise
 
         only_load = queryset.query.get_loaded_field_names()
         load_fields = []
