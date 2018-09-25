@@ -522,7 +522,13 @@ class CursorWrapper(object):
         log.debug(processed_sql)
         if q != MIGRATIONS_QUERY_TO_BE_IGNORED:
             # normal query
-            return handle_api_exceptions(url, self.session.get, _cursor=self)
+            try:
+                return handle_api_exceptions(url, self.session.get, _cursor=self)
+            except OSError as e:
+                if e.errno == errno.ECONNRESET:
+                    log.error('Killing salesforce session because of connection reset by peer error')
+                    self.db.kill_session()
+                raise
         else:
             # Nothing queried about django_migrations to SFDC and immediately responded that
             # nothing about migration status is recorded in SFDC.
