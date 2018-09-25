@@ -143,6 +143,10 @@ class DatabaseWrapper(BaseDatabaseWrapper):
     def kill_session(self):
         self._sf_session = None
 
+    def restart_session(self):
+        self.kill_session()
+        self.sf_session
+
     @property
     def sf_session(self):
         if self._sf_session is None:

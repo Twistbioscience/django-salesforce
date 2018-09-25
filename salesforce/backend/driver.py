@@ -8,6 +8,7 @@ Code at lower level than DB API should be also here.
 """
 import requests
 import socket
+import errno
 
 from django.conf import settings
 from django.utils.six import PY3
@@ -137,7 +138,7 @@ def handle_api_exceptions(url, f, *args, **kwargs):
     log.debug('Request API URL: %s' % url)
     request_count += 1
     try:
-        response = f(url, *args, **kwargs_in)
+        response = execute_and_retry_on_idle_connection(url, f, kwargs['_cursor'], *args, **kwargs_in)
     # TODO some timeouts can be rarely raised as "SSLError: The read operation timed out"
     except requests.exceptions.Timeout:
         raise SalesforceError("Timeout, URL=%s" % url)
@@ -189,3 +190,12 @@ def handle_api_exceptions(url, f, *args, **kwargs):
     # some kind of failed query
     else:
         raise SalesforceError('%s' % data, data, response, verbose)
+
+def execute_and_retry_on_idle_connection(url, f, cursor, *args, **kwargs_in):
+    try:
+        return f(url, *args, **kwargs_in)
+    except OSError as e:
+        if e.errno == errno.ECONNRESET:
+            log.error('Restarting salesforce session because of connection reset by peer error')
+            cursor.db.restart_session()
+            return f(url, *args, **kwargs_in)
