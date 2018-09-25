@@ -195,7 +195,6 @@ def execute_and_retry_on_idle_connection(url, f, cursor, *args, **kwargs_in):
     try:
         return f(url, *args, **kwargs_in)
     except OSError as e:
-        if e.errno == errno.ECONNRESET:
-            log.error('Restarting salesforce session because of connection reset by peer error')
-            cursor.db.restart_session()
-            return f(url, *args, **kwargs_in)
+        log.error('Restarting salesforce session because of connection reset by peer error')
+        cursor.db.restart_session()
+        return f(url, *args, **kwargs_in)
