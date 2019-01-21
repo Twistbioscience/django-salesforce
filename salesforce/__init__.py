@@ -15,7 +15,7 @@ import warnings
 
 import django
 
-__version__ = "0.7.6"
+__version__ = "0.7.7"
 
 DJANGO_18_PLUS = True  # unused by us now - backward compatibility
 DJANGO_19_PLUS = django.VERSION[:2] >= (1, 9)
