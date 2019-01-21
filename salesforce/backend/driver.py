@@ -139,7 +139,7 @@ def handle_api_exceptions(url, f, *args, **kwargs):
     log.debug('Request API URL: %s' % url)
     request_count += 1
     try:
-        response = execute_and_retry_on_idle_connection(url, f, kwargs['_cursor'], *args, **kwargs_in)
+        response = execute_and_retry_on_idle_connection(url, f, kwargs.get('_cursor'), *args, **kwargs_in)
     # TODO some timeouts can be rarely raised as "SSLError: The read operation timed out"
     except requests.exceptions.Timeout:
         raise SalesforceError("Timeout, URL=%s" % url)
