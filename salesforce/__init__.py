@@ -11,11 +11,10 @@ A database backend for the Django ORM.
 Allows access to all Salesforce objects accessible via the SOQL API.
 """
 import logging
-import warnings
 
 import django
 
-__version__ = "0.7.7"
+__version__ = "0.8"
 
 DJANGO_18_PLUS = True  # unused by us now - backward compatibility
 DJANGO_19_PLUS = django.VERSION[:2] >= (1, 9)
@@ -42,4 +41,4 @@ log = logging.getLogger(__name__)
 # >>> import salesforce
 # >>> setattr(salesforce, 'API_VERSION', '37.0')
 
-API_VERSION = '39.0'  # Spring '17
+API_VERSION = '45.0'  # Spring '19

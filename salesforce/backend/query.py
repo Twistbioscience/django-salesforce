@@ -6,12 +6,9 @@
 #
 
 """
-Salesforce object query and queryset customizations.
+Salesforce object query and queryset customizations.  (like django.db.models.query)
 """
-# TODO hynekcer: class CursorWrapper should
-#      be moved to salesforce.backend.driver at the next big refactoring
-#      (Evenso some low level internals of salesforce.auth should be moved to
-#      salesforce.backend.driver.Connection)
+import warnings
 
 from __future__ import print_function
 import datetime
@@ -21,22 +18,11 @@ import logging
 import pytz
 import errno
 from itertools import islice
+from django.db import NotSupportedError
+from django.db.models import query
 
-from django.conf import settings
-from django.core.serializers import python
-from django.core.exceptions import ImproperlyConfigured
-from django.db import connections
-from django.db.models import query, Count
-from django.db.models.sql import Query, RawQuery, constants, subqueries
-from django.db.models.sql.datastructures import EmptyResultSet
-from django.utils.six import PY3
+from salesforce.backend import DJANGO_20_PLUS
 
-from salesforce import models, DJANGO_19_PLUS, DJANGO_110_PLUS
-from salesforce.backend.driver import DatabaseError, SalesforceError, handle_api_exceptions, API_STUB
-from salesforce.backend.compiler import SQLCompiler
-from salesforce.backend.operations import DefaultedOnCreate
-from salesforce.fields import NOT_UPDATEABLE, NOT_CREATEABLE, SF_PK
-import salesforce.backend.driver
 
 if not DJANGO_110_PLUS:
     from django.db.models.query_utils import deferred_class_factory
@@ -309,11 +295,7 @@ class SalesforceQuerySet(query.QuerySet):
     Use a custom SQL compiler to generate SOQL-compliant queries.
     """
 
-    def __init__(self, *args, **kwargs):
-        super(SalesforceQuerySet, self).__init__(*args, **kwargs)
-        self._iterable_class = SalesforceModelIterable
-
-    def iterator(self):
+    def iterator(self, chunk_size=2000):
         """
         An iterator over the results from applying this QuerySet to the
         database.
@@ -326,36 +308,18 @@ class SalesforceQuerySet(query.QuerySet):
             Lead.objects.query_all().filter(IsDeleted=True,...)
         https://www.salesforce.com/us/developer/docs/api_rest/Content/resources_queryall.htm
         """
-        obj = self._clone(klass=SalesforceQuerySet)
+        if DJANGO_20_PLUS:
+            obj = self._clone()
+        else:
+            obj = self._clone(klass=SalesforceQuerySet)  # pylint: disable=unexpected-keyword-arg
         obj.query.set_query_all()
         return obj
 
     def simple_select_related(self, *fields):
-        """
-        Simplified "select_related" for Salesforce
-
-        Example:
-            for x in Contact.objects.filter(...).order_by('id')[10:20].simple_select_related('account'):
-                print(x.name, x.account.name)
-        Restrictions:
-            * This must be the last method in the queryset method chain, after every other
-              method, after a possible slice etc. as you see above.
-            * Fields must be explicitely specified. Universal caching of all related
-              without arguments is not implemented (because it could be inefficient and
-              complicated if some of them should be deferred)
-        """
-        if not fields:
-            raise Exception("Fields must be specified in 'simple_select_related' call, otherwise it wol")
-        for rel_field in fields:
-            rel_model = self.model._meta.get_field(rel_field).related_model
-            rel_attr = self.model._meta.get_field(rel_field).attname
-            rel_qs = rel_model.objects.filter(pk__in=self.values_list(rel_attr, flat=True))
-            fk_map = {x.pk: x for x in rel_qs}
-            for x in self:
-                rel_fk = getattr(x, rel_attr)
-                if rel_fk:
-                    setattr(x, '_{}_cache'.format(rel_field), fk_map[rel_fk])
-        return self
+        if DJANGO_20_PLUS:
+            raise NotSupportedError("Obsoleted method .simple_select_related(), use .select_related() instead")
+        warnings.warn("Obsoleted method .simple_select_related(), use .select_related() instead")
+        return self.select_related(*fields)
 
 
 class SalesforceRawQuery(RawQuery):

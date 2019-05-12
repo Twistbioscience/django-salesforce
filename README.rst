@@ -7,10 +7,10 @@ django-salesforce
 .. image:: https://badge.fury.io/py/django-salesforce.svg
    :target: https://pypi.python.org/pypi/django-salesforce
 
-.. image:: https://img.shields.io/badge/Python-2.7.9%2B%2C%203.4%2C%203.5-brightgreen.svg
+.. image:: https://img.shields.io/badge/Python-2.7.9%2B%2C%203.4%2C%203.5%2C%203.6%2C%203.7-brightgreen.svg
    :target: https://www.python.org/
 
-.. image:: https://img.shields.io/badge/Django-1.8.4%2B%2C%201.9%2C%201.10%2C%201.11-blue.svg
+.. image:: https://img.shields.io/badge/Django-1.10%2C%201.11%2C%202.0%2C%202.1-blue.svg
    :target: https://www.djangoproject.com/
 
 This library allows you to load and edit the objects in any Salesforce instance
@@ -19,17 +19,10 @@ for most uses. It works by integrating with the Django ORM, allowing access to
 the objects in your SFDC instance (Salesforce .com) as if they were in a
 traditional database.
 
-Python 2.7.9+, 3.4 to 3.6, Django 1.8.4+, 1.9, 1.10, 1.11 are supported with
-some limitations on raw queries, values_list() and values() methods.
+Python 2.7.9+, 3.4 to 3.7, Django 1.10, 1.11, 2.0 to 2.2.
 
-Django 1.10 and 1.11 is currently supported without values(), values_list(), defer(),
-some raw() methods. (All fixed in a development repository, waiting for review,
-consensus etc.)
-
-Pre-2.7.9 Python versions don't have the required TLS 1.1 support to use
-both production and sandbox Salesforce instances. PyPy may still work,
-but currently it's a challenge to get a PyPy build linked to a recent
-version of libssl.
+Pre-2.7.9 Python versions don't support the protocol TLS 1.1+ required
+by Salesforce. New PyPy versions compatible with TLS 1.1+ are supported also.
 
 Quick Start
 -----------
@@ -176,7 +169,7 @@ Advanced usage
    that most apps require, so the default DB connection to use for Salesforce
    is defined by the ``SALESFORCE_DB_ALIAS`` settings variable. This behavior
    can be also configured by ``DATABASE_ROUTERS``, replacing the use of
-   salesforce.backend.router.ModelRouter.
+   salesforce.router.ModelRouter.
 
 -  **Non SF databases** - If ``SALESFORCE_DB_ALIAS`` is set to a conventional
    database, the tables defined by the SF models will be created by ``migrate``. This
@@ -232,6 +225,12 @@ Advanced usage
    Consequently, the setting ``managed = True`` is related only to an alternate
    non SFDC database configured by ``SF_ALIAS``.)
 
+-  **Exceptions** - Custom exceptions instead of standard Django database
+   exceptions are raised by Django-Salesforce to get more useful information.
+   General exceptions are ``SalesforceError`` or a more general custom
+   ``DatabaseError``. They can be imported from ``salesforce.dbapi.exceptions``
+   if database errors should be handled specifically in your app.
+
 Foreign Key Support
 -------------------
 Foreign key relationships should work as expected, but mapping
@@ -272,8 +271,16 @@ here are the potential pitfalls and unimplemented operations:
 Backwards-incompatible changes
 ------------------------------
 
--  v0.8 (future): The default Meta option if now ``managed = True``, which is an unimportant
+-  v0.8: The default Meta option if now ``managed = True``, which is an unimportant
    change for Salesforce databases (see about Migrations above).
+
+   Completely different implementation of raw queries and cursor that compatible
+   with normal databases. (a more backward compatible option can be added if
+   it will be required)
+
+   Custom exception classes has been moved to ``salesforce.dbapi.exceptions``.
+
+-  v0.7.2: This is the last code that supports old Django 1.8.4+ and 1.9
 
 -  v0.6.9: This is the last code that supports old Django 1.7 and 1.8.0 - 1.8.3
 

@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from django.test import TestCase
-from tests.test_mixin.models import Account, Contact, User, ProxyContact, Proxy2Contact
+from tests.test_mixin.models import Account, Contact, Proxy2Contact
 from salesforce.backend.test_helpers import current_user, uid_version as uid
 
 
@@ -13,6 +13,8 @@ def refresh(obj):
 
 
 class MixinTest(TestCase):
+    databases = '__all__'
+
     def test_mixin(self):
         """Test that mixins from abstract classes work and also proxy models."""
         # create the object with one field from the second ancestor and one from the first
