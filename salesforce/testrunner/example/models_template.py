@@ -5,7 +5,7 @@ removed very long choices, removed many long fields, reformated long
 lines, but still an example of a long model exported from Salesforce.
 """
 from __future__ import unicode_literals
-from salesforce import models
+from salesforce import models_template as models
 
 
 class User(models.Model):
@@ -13,7 +13,6 @@ class User(models.Model):
     Email = models.CharField(max_length=100)
     LastName = models.CharField(max_length=80)
     FirstName = models.CharField(max_length=40)
-    IsActive = models.BooleanField(default=False)
 
 
 class Organization(models.Model):
@@ -32,6 +31,7 @@ class Organization(models.Model):
     last_modified_date = models.DateTimeField(sf_read_only=models.READ_ONLY)
     last_modified_by = models.ForeignKey('User', related_name='organization_lastmodifiedby_set',
                                          sf_read_only=models.READ_ONLY, on_delete=models.DO_NOTHING)
+
     class Meta(models.Model.Meta):
         db_table = 'Organization'
         verbose_name = 'Organization'

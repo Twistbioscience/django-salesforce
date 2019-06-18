@@ -9,30 +9,24 @@
 Database router for SalesforceModel objects.
 """
 
-import logging
-
 from django.apps import apps
 from django.conf import settings
-
-log = logging.getLogger(__name__)
 
 
 def is_sf_database(db, model=None):
     """The alias is a Salesforce database."""
     from django.db import connections
-    from salesforce.backend.base import DatabaseWrapper
     if db is None:
         return getattr(model, '_salesforce_object', False)
-    else:
-        engine = connections[db].settings_dict['ENGINE']
-        return (engine == 'salesforce.backend' or
-                isinstance(connections[db], DatabaseWrapper))
+    engine = connections[db].settings_dict['ENGINE']
+    return engine == 'salesforce.backend' or connections[db].vendor == 'salesforce'
 
 
 class ModelRouter(object):
     """
     Database router for Salesforce models.
     """
+    # pylint:disable=protected-access
     @property
     def sf_alias(self):
         return getattr(settings, 'SALESFORCE_DB_ALIAS', 'salesforce')
@@ -68,14 +62,17 @@ class ModelRouter(object):
         Don't attempt to sync SF models to non SF databases and vice versa.
         """
         if model_name:
-            model = apps.get_model(app_label, model_name)
-        elif 'model' in hints:
-            # hints are used with less priority, because many hints are dynamic
-            # models on a '__fake__' module which are not SalesforceModels
-            model = hints['model']
+            try:
+                model = apps.get_model(app_label, model_name)
+            except LookupError:
+                if 'model' in hints and hints['model'].__module__ == '__fake__':
+                    return
+                raise
         else:
-            # in data migrations
-            model = None
+            # hints are used with less priority, because many hints are dynamic
+            # models made by migrations on a '__fake__' module which are not
+            # SalesforceModels
+            model = hints.get('model')
 
         if hasattr(model, '_salesforce_object'):
             # SF models can be migrated if SALESFORCE_DB_ALIAS is e.g.
@@ -91,6 +88,6 @@ class ModelRouter(object):
         if hasattr(model, '_salesforce_object'):
             # return False
             pass
-        # Nothing is said about non SF models with non SF databases, because
-        # it can be solved by other routers. By default it is enabled if all
-        # routers say "None".
+        # Nothing is decided about non SF models with non SF databases, because
+        # it can be solved by other routers. Migration is enabled by default if
+        # all routers return "None".
