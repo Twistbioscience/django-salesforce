@@ -150,6 +150,10 @@ class RawConnection(object):
 
     # -- private attributes
 
+    def restart_session(self):
+        self._sf_session = None
+        self.sf_session
+
     @property
     def sf_session(self):
         if self._sf_session is None:
@@ -258,7 +262,7 @@ class RawConnection(object):
         session = self.sf_session
 
         try:
-            response = self.execute_and_retry_on_idle_connection(method, url, session, kwargs.get('_cursor'), **kwargs_in)
+            response = self.execute_and_retry_on_idle_connection(method, url, **kwargs_in)
         except requests.exceptions.Timeout:
             raise SalesforceError("Timeout, URL=%s" % url)
         if response.status_code == 401:  # Unauthorized
@@ -284,16 +288,15 @@ class RawConnection(object):
         # https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/errorcodes.htm
         self.raise_errors(response)
 
-    def execute_and_retry_on_idle_connection(self, method, url, session, cursor, **kwargs):
+    def execute_and_retry_on_idle_connection(self, method, url, **kwargs):
         try:
-            return session.request(method, url, **kwargs)
+            return self.sf_session.request(method, url, **kwargs)
         except OSError:
             log.error("Restarting salesforce session because of connection reset by peer error. "
                       "Method: '{}', url: '{}', kwargs: '{}', headers: {}, params: {}, OAuth: {}"
-                      .format(session.request.__func__.__name__, url, kwargs,
-                              session.sf_session.headers, session.sf_session.params, cursor.oauth))
-            cursor.db.restart_session()
-            return session.request(method, url, **kwargs)
+                      .format(method, url, kwargs, self.sf_session.headers, self.sf_session.params, self.oauth))
+            self.restart_session()
+            return self.sf_session.request(method, url, **kwargs)
 
     def raise_errors(self, response):
         """The innermost part - report errors by exceptions"""

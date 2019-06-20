@@ -91,13 +91,6 @@ class DatabaseWrapper(BaseDatabaseWrapper):
             self.validation = DatabaseValidation(self)
         self._is_sandbox = None
 
-    def kill_session(self):
-        self.connection.sf_session = None
-
-    def restart_session(self):
-        self.kill_session()
-        self.sf_session
-
     @property
     def sf_session(self):
         if self.connection is None:
