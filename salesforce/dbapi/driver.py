@@ -293,8 +293,8 @@ class RawConnection(object):
             return self.sf_session.request(method, url, **kwargs)
         except OSError:
             log.error("Restarting salesforce session because of connection reset by peer error. "
-                      "Method: '{}', url: '{}', kwargs: '{}', headers: {}, params: {}, OAuth: {}"
-                      .format(method, url, kwargs, self.sf_session.headers, self.sf_session.params, self.oauth))
+                      "Method: '{}', url: '{}', kwargs: '{}', headers: {}, params: {}"
+                      .format(method, url, kwargs, self.sf_session.headers, self.sf_session.params))
             self.restart_session()
             return self.sf_session.request(method, url, **kwargs)
 
